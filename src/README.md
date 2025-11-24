@@ -1,0 +1,1 @@
+For the first blink test of just pure sleep_ms, we used a voltage source of 3.3 volts and .032 amps of current the measured voltage was from .424 to 1.550 volts, the current was 5.4 mA. This was using a 120 ohm resistor in series with an led. 
