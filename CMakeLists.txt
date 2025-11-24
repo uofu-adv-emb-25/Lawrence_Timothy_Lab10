@@ -15,8 +15,18 @@ else()
     set(PICO_SDK_PATH lib/pico-sdk)
 endif()
 
+if(DEFINED ENV{FREERTOS_PATH})
+    set(FREERTOS_PATH $ENV{FREERTOS_PATH})
+else()
+    set(FREERTOS_PATH lib/freertos)
+endif()
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(DEFINED ENV{UNITY_PATH})
+    set(UNITY_PATH $ENV{UNITY_PATH})
+else()
+    set(UNITY_PATH lib/unity)
+endif()
+
 # ====================================================================================
 cmake_minimum_required(VERSION 3.13)
 
@@ -30,29 +40,30 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 # This imports the Pico SDK (must be included before the project)
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 
-# Let FREERTOS_PATH default to lib/freertos in this repo
-if(DEFINED ENV{FREERTOS_PATH})
-    set(FREERTOS_PATH $ENV{FREERTOS_PATH})
-else()
-    set(FREERTOS_PATH ${CMAKE_SOURCE_DIR}/lib/freertos)
-endif()
-
-include("${FREERTOS_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake")
-
 # This imports the library configuration for FreeRTOS
-#include(/home/lawrence/Documents/Repos/ECE5785/RTOS\ Kernel/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
+include(${FREERTOS_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
+
+# This sets up the unity library. They don't provide a library export, so it's defined locally.
+include(unity.cmake)
 
 # This defines your project name, you can name it anything you want.
-project(lab11 C CXX ASM)
+project(myproject C CXX ASM)
 
 # These are some macros from the pico SDK that do some setup.
 pico_sdk_init()
 
 # This sets a preprocessor value for use in our code.
 add_compile_definitions(
+    configNUMBER_OF_CORES=1
     PICO_ENTER_USB_BOOT_ON_EXIT=1
-)
+    )
 
 # This is where your project header files are located.
-include_directories(${CMAKE_SOURCE_DIR}/include)
-add_subdirectory(server)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
+
+# The main executable is defined inside the src directory.
+add_subdirectory(src)
+
+# The test configuration is inside the test directory.
+include(CTest)
+add_subdirectory(test)

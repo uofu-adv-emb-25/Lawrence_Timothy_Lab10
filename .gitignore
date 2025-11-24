@@ -1,3 +1,11 @@
-.cache
-.CMakeLists.txt
-build/
+Testing
+build
+log
+
+*.log.*
+*-asciinema
+*.pid
+*-profile
+CMakeLists.txt
+
+.vscode
