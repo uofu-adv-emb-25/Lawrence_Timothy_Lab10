@@ -1,9 +1,8 @@
 /**
- * Copyright (c) 2022 Raspberry Pi (Trading) Ltd.
+ * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
 #include <stdio.h>
 
 #include "FreeRTOS.h"
@@ -11,58 +10,41 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "pico/cyw43_arch.h"
 
-#include <semphr.h>
 
-#define SUPERVISOR_PRIORITY      ( tskIDLE_PRIORITY + 3UL )
-#define SUBORDINATE_PRIORITY     ( tskIDLE_PRIORITY + 1UL )
-#define SUPERVISOR_STACK_SIZE configMINIMAL_STACK_SIZE
-#define SUBORDINATE_STACK_SIZE configMINIMAL_STACK_SIZE
+#define LED_PIN 17
 
-SemaphoreHandle_t sem;
-int delay0 = 0;
-int delay1 = 1;
+#define BLINK_TASK_PRIORITY     ( tskIDLE_PRIORITY + 1UL )
+#define BLINK_TASK_STACK_SIZE configMINIMAL_STACK_SIZE
 
-void sub_task(void *params) {
-    int delay = *((int*)params);
-    if (delay)
-        vTaskDelay(delay);
-    
-    if (xSemaphoreTake(sem, 1000))
-        printf("Task%d took sem\n", delay);
-    else
-        printf("Task%d failed to take sem\n", delay);
-    
-    while (1)
-        vTaskDelay(100);
+int on;
+
+// Blink thread blinks with delay of 100ms
+void blink_task(__unused void *params) {
+    while (true) {
+        gpio_put(LED_PIN, on);
+        sleep_ms(100);
+        on = !on;
+    }
 }
 
-void supervisor(__unused void *params) {
-    sem = xSemaphoreCreateMutex(); 
-
-    xTaskCreate(sub_task, "Sub0",
-                SUBORDINATE_STACK_SIZE, &delay0, SUBORDINATE_PRIORITY, NULL);
-
-    xTaskCreate(sub_task, "Sub1",
-                SUBORDINATE_STACK_SIZE, &delay1, SUBORDINATE_PRIORITY + 1UL, NULL);
-    while (1)
-        vTaskDelay(100);
-}
-
-int main( void )
-{
+int main() {
     stdio_init_all();
-    hard_assert(cyw43_arch_init() == PICO_OK);
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-    sleep_ms(5000);
-    
-    printf("Started\n");
-    const char *rtos_name;
-    rtos_name = "FreeRTOS";
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_put(LED_PIN, 0);
     TaskHandle_t task;
-    xTaskCreate(supervisor, "Supervisor",
-                SUPERVISOR_STACK_SIZE, NULL, SUPERVISOR_PRIORITY, &task);
+
+    // Create the blink thread
+    xTaskCreate(blink_task, "BlinkTask",
+                BLINK_TASK_STACK_SIZE, NULL, BLINK_TASK_PRIORITY, &task);
     vTaskStartScheduler();
-    return 0;
+    // while(1) {
+    //     uint32_t k;
+    //     for (int i = 0; i < 30) {
+    //     uint32_t j = 0;
+    //     j = ((~j >> i) + 1) * 27644437;
+    //     k = j;
+    // }
+    return 0; // kills the initial main thread that was spawned at int main()
 }

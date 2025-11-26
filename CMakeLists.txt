@@ -1,4 +1,21 @@
 # == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+
+cmake_minimum_required(VERSION 3.12)
+
+# Pull in PICO SDK (must be before project)
+include(pico_sdk_import.cmake)
+
+if(DEFINED ENV{PICO_EXTRAS_PATH})
+    set(PICO_EXTRAS_PATH $ENV{PICO_EXTRAS_PATH})
+else()
+    set(PICO_EXTRAS_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/pico-extras)
+endif()
+
+project(pico_playground C CXX)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+
 if(WIN32)
     set(USERHOME $ENV{USERPROFILE})
 else()
