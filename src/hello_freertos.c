@@ -10,7 +10,7 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-
+#pragma GCC optimize ("O0")
 
 #define LED_PIN 17
 
@@ -39,12 +39,13 @@ int main() {
     xTaskCreate(blink_task, "BlinkTask",
                 BLINK_TASK_STACK_SIZE, NULL, BLINK_TASK_PRIORITY, &task);
     vTaskStartScheduler();
-    // while(1) {
-    //     uint32_t k;
-    //     for (int i = 0; i < 30) {
-    //     uint32_t j = 0;
-    //     j = ((~j >> i) + 1) * 27644437;
-    //     k = j;
-    // }
+    while(1) {
+        uint32_t k;
+        for (int i = 0; i < 30; i++) {
+        uint32_t j = 0;
+        j = ((~j >> i) + 1) * 27644437;
+        k = j;
+        }
+    }
     return 0; // kills the initial main thread that was spawned at int main()
 }
