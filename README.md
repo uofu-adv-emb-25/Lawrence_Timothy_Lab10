@@ -29,3 +29,14 @@ Across 120 ohm resistor
 10KHZ: V = 3.3 I = 0.0282
 100KHZ: V = 3.3 I = 0.0282
 1MHZ: V = 3.3 I = 0.0291
+
+- Sleep demo
+V = 3.3
+Initially I = 0.016
+Later I = 0.008
+Then keep cycling between those values
+
+- Dormant Demo
+V = 3.3 
+Initially I = 0.012
+Later I = 0.017
