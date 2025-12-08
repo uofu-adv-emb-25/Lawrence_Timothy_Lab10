@@ -10,42 +10,31 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#pragma GCC optimize ("O0")
 
 #define LED_PIN 17
+#define SIG_IN_PIN 14
 
-#define BLINK_TASK_PRIORITY     ( tskIDLE_PRIORITY + 1UL )
-#define BLINK_TASK_STACK_SIZE configMINIMAL_STACK_SIZE
+static volatile bool led_state = false;
 
-int on;
-
-// Blink thread blinks with delay of 100ms
-void blink_task(__unused void *params) {
-    while (true) {
-        gpio_put(LED_PIN, on);
-        sleep_ms(100);
-        on = !on;
-    }
+void irq_callback(uint gpio, uint32_t event_mask)
+{
+     if (gpio == SIG_IN_PIN && (events & GPIO_IRQ_EDGE_RISE)) {
+        led_state = !led_state;
+        gpio_put(LED_PIN, led_state);
+     }
 }
 
 int main() {
     stdio_init_all();
+
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
     gpio_put(LED_PIN, 0);
-    TaskHandle_t task;
 
-    // Create the blink thread
-    xTaskCreate(blink_task, "BlinkTask",
-                BLINK_TASK_STACK_SIZE, NULL, BLINK_TASK_PRIORITY, &task);
-    vTaskStartScheduler();
-    while(1) {
-        uint32_t k;
-        for (int i = 0; i < 30; i++) {
-        uint32_t j = 0;
-        j = ((~j >> i) + 1) * 27644437;
-        k = j;
-        }
-    }
-    return 0; // kills the initial main thread that was spawned at int main()
-}
+    gpio_init(SIG_IN_PIN);
+    gpio_set_dir(SIG_IN_PIN, GPIO_IN);
+    
+    gpio_set_irq_enabled_with_callback(SIG_IN_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL , true, irq_callback);
+    while(1) __wfi();
+    return 0;
+}x
