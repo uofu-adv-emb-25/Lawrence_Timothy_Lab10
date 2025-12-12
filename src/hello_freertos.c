@@ -1,9 +1,8 @@
 /**
- * Copyright (c) 2022 Raspberry Pi (Trading) Ltd.
+ * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
 #include <stdio.h>
 
 #include "FreeRTOS.h"
@@ -11,58 +10,31 @@
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
-#include "pico/cyw43_arch.h"
 
-#include <semphr.h>
+#define LED_PIN 17
+#define SIG_IN_PIN 14
 
-#define SUPERVISOR_PRIORITY      ( tskIDLE_PRIORITY + 3UL )
-#define SUBORDINATE_PRIORITY     ( tskIDLE_PRIORITY + 1UL )
-#define SUPERVISOR_STACK_SIZE configMINIMAL_STACK_SIZE
-#define SUBORDINATE_STACK_SIZE configMINIMAL_STACK_SIZE
+static volatile bool led_state = false;
 
-SemaphoreHandle_t sem;
-int delay0 = 0;
-int delay1 = 1;
-
-void sub_task(void *params) {
-    int delay = *((int*)params);
-    if (delay)
-        vTaskDelay(delay);
-    
-    if (xSemaphoreTake(sem, 1000))
-        printf("Task%d took sem\n", delay);
-    else
-        printf("Task%d failed to take sem\n", delay);
-    
-    while (1)
-        vTaskDelay(100);
-}
-
-void supervisor(__unused void *params) {
-    sem = xSemaphoreCreateMutex(); 
-
-    xTaskCreate(sub_task, "Sub0",
-                SUBORDINATE_STACK_SIZE, &delay0, SUBORDINATE_PRIORITY, NULL);
-
-    xTaskCreate(sub_task, "Sub1",
-                SUBORDINATE_STACK_SIZE, &delay1, SUBORDINATE_PRIORITY + 1UL, NULL);
-    while (1)
-        vTaskDelay(100);
-}
-
-int main( void )
+void irq_callback(uint gpio, uint32_t event_mask)
 {
-    stdio_init_all();
-    hard_assert(cyw43_arch_init() == PICO_OK);
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-    sleep_ms(5000);
-    
-    printf("Started\n");
-    const char *rtos_name;
-    rtos_name = "FreeRTOS";
-    TaskHandle_t task;
-    xTaskCreate(supervisor, "Supervisor",
-                SUPERVISOR_STACK_SIZE, NULL, SUPERVISOR_PRIORITY, &task);
-    vTaskStartScheduler();
-    return 0;
+     if (gpio == SIG_IN_PIN && (events & GPIO_IRQ_EDGE_RISE)) {
+        led_state = !led_state;
+        gpio_put(LED_PIN, led_state);
+     }
 }
+
+int main() {
+    stdio_init_all();
+
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_put(LED_PIN, 0);
+
+    gpio_init(SIG_IN_PIN);
+    gpio_set_dir(SIG_IN_PIN, GPIO_IN);
+    
+    gpio_set_irq_enabled_with_callback(SIG_IN_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL , true, irq_callback);
+    while(1) __wfi();
+    return 0;
+}x

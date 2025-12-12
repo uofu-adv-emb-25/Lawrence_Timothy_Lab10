@@ -1,4 +1,21 @@
 # == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+
+cmake_minimum_required(VERSION 3.12)
+
+# Pull in PICO SDK (must be before project)
+include(pico_sdk_import.cmake)
+
+if(DEFINED ENV{PICO_EXTRAS_PATH})
+    set(PICO_EXTRAS_PATH $ENV{PICO_EXTRAS_PATH})
+else()
+    set(PICO_EXTRAS_PATH ${CMAKE_CURRENT_LIST_DIR}/lib/pico-extras)
+endif()
+
+project(pico_playground C CXX)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+
 if(WIN32)
     set(USERHOME $ENV{USERPROFILE})
 else()
@@ -46,6 +63,8 @@ include(${FREERTOS_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.c
 # This sets up the unity library. They don't provide a library export, so it's defined locally.
 include(unity.cmake)
 
+add_subdirectory(lib/pico-extras)
+
 # This defines your project name, you can name it anything you want.
 project(myproject C CXX ASM)
 
@@ -64,6 +83,3 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/include)
 # The main executable is defined inside the src directory.
 add_subdirectory(src)
 
-# The test configuration is inside the test directory.
-include(CTest)
-add_subdirectory(test)
